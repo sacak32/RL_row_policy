@@ -1,0 +1,5 @@
+.vscode/
+build/
+libdramsim3.so
+out/
+

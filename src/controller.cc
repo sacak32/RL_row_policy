@@ -22,16 +22,25 @@ Controller::Controller(int channel, const Config &config, const Timing &timing)
       thermal_calc_(thermal_calc),
 #endif  // THERMAL
       is_unified_queue_(config.unified_queue),
-      row_buf_policy_(config.row_buf_policy == "CLOSE_PAGE"
-                          ? RowBufPolicy::CLOSE_PAGE
-                          : RowBufPolicy::OPEN_PAGE),
       last_trans_clk_(0),
       write_draining_(0) {
+
     if (is_unified_queue_) {
         unified_queue_.reserve(config_.trans_queue_size);
     } else {
         read_queue_.reserve(config_.trans_queue_size);
         write_buffer_.reserve(config_.trans_queue_size);
+    }
+
+    if (config.row_buf_policy == "CLOSE_PAGE") 
+        row_buf_policy_ = RowBufPolicy::CLOSE_PAGE;
+    else if (config.row_buf_policy == "OPEN_PAGE")
+        row_buf_policy_ = RowBufPolicy::OPEN_PAGE;
+    else if (config.row_buf_policy == "TIMEOUT")
+        row_buf_policy_ = RowBufPolicy::TIMEOUT;
+    else {
+        std::cout << "ERROR: Unidentified row buffer policy." << std::endl;
+        row_buf_policy_ = RowBufPolicy::UNDEFINED;
     }
 
 #ifdef CMD_TRACE
