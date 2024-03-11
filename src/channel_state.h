@@ -12,10 +12,10 @@ namespace dramsim3 {
 class ChannelState {
    public:
     ChannelState(const Config& config, const Timing& timing);
-    Command GetReadyCommand(const Command& cmd, uint64_t clk) const;
+    Command GetReadyCommand(const Command& cmd, uint64_t clk);
     void UpdateState(const Command& cmd);
-    void UpdateTiming(const Command& cmd, uint64_t clk);
-    void UpdateTimingAndStates(const Command& cmd, uint64_t clk);
+    void UpdateTiming(const Command& cmd, const RowBufPolicy policy, uint64_t clk);
+    void UpdateTimingAndStates(const Command& cmd, const RowBufPolicy policy, uint64_t clk);
     bool ActivationWindowOk(int rank, uint64_t curr_time) const;
     void UpdateActivationTimes(int rank, uint64_t curr_time);
     bool IsRowOpen(int rank, int bankgroup, int bank) const {
@@ -78,6 +78,13 @@ class ChannelState {
     void UpdateSameRankTiming(
         const Address& addr,
         const std::vector<std::pair<CommandType, int> >& cmd_timing_list,
+        uint64_t clk);
+
+    // Update the row timeout, used only in TIMEOUT row policy
+    void UpdateSameBankTimeout(
+        const Address& addr,
+        const CommandType cmd_type,
+        const RowBufPolicy policy,
         uint64_t clk);
 };
 

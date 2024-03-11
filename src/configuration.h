@@ -91,14 +91,14 @@ class Config {
     int tWPRE;
     int read_delay;
     int write_delay;
-
     // LPDDR4 and GDDR5
     int tPPD;
     // GDDR5
     int t32AW;
     int tRCDRD;
     int tRCDWR;
-
+    // TIMEOUT Policy
+    int TIMEOUT;        // Number of idle cycles before the row gets closed
     // pre calculated power parameters
     double act_energy_inc;
     double pre_energy_inc;

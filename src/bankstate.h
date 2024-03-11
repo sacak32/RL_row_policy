@@ -2,22 +2,29 @@
 #define __BANKSTATE_H
 
 #include <vector>
+#include <cassert>
+#include <limits>
+
 #include "common.h"
+#include "timing.h"
 
 namespace dramsim3 {
 
 class BankState {
    public:
-    BankState();
+    BankState(const Timing& timing_);
 
     enum class State { OPEN, CLOSED, SREF, PD, SIZE };
-    Command GetReadyCommand(const Command& cmd, uint64_t clk) const;
+    Command GetReadyCommand(const Command& cmd, uint64_t clk);
 
     // Update the state of the bank resulting after the execution of the command
     void UpdateState(const Command& cmd);
 
     // Update the existing timing constraints for the command
     void UpdateTiming(const CommandType cmd_type, uint64_t time);
+
+    // Update row timeout, used only in TIMEOUT row policy
+    void UpdateTimeout(CommandType cmd_type, const RowBufPolicy policy, uint64_t clk);
 
     bool IsRowOpen() const { return state_ == State::OPEN; }
     int OpenRow() const { return open_row_; }
@@ -28,6 +35,9 @@ class BankState {
     // Apriori or instantaneously transitions on a command.
     State state_;
 
+    // Timing values
+    const Timing& timing;
+    
     // Earliest time when the particular Command can be executed in this bank
     std::vector<uint64_t> cmd_timing_;
 
@@ -36,6 +46,9 @@ class BankState {
 
     // consecutive accesses to one row
     int row_hit_count_;
+
+    // TIMEOUT
+    uint64_t timeout;   // keeps the row timeout
 };
 
 }  // namespace dramsim3

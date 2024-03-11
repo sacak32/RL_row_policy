@@ -61,6 +61,9 @@ Timing::Timing(const Config& config)
     // int powerdown_to_exit = config.tCKE;
     // int powerdown_exit = config.tXP;
 
+    // TIMEOUT
+    timeout_delay = std::max({read_to_read_l, read_to_write, read_to_precharge, write_to_read_l, write_to_write_l, write_to_precharge}) + config.TIMEOUT;
+
     if (config.bankgroups == 1) {
         // for a bankgroup can be disabled, in that case
         // the value of tXXX_S should be used instead of tXXX_L

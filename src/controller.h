@@ -17,8 +17,6 @@
 
 namespace dramsim3 {
 
-enum class RowBufPolicy { OPEN_PAGE, CLOSE_PAGE, SIZE, TIMEOUT, UNDEFINED };
-
 class Controller {
    public:
 #ifdef THERMAL

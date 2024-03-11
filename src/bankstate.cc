@@ -2,11 +2,13 @@
 
 namespace dramsim3 {
 
-BankState::BankState()
+BankState::BankState(const Timing& timing_)
     : state_(State::CLOSED),
+      timing(timing_),
       cmd_timing_(static_cast<int>(CommandType::SIZE)),
       open_row_(-1),
-      row_hit_count_(0) {
+      row_hit_count_(0),
+      timeout(std::numeric_limits<uint64_t>::max()) {
     cmd_timing_[static_cast<int>(CommandType::READ)] = 0;
     cmd_timing_[static_cast<int>(CommandType::READ_PRECHARGE)] = 0;
     cmd_timing_[static_cast<int>(CommandType::WRITE)] = 0;
@@ -19,8 +21,15 @@ BankState::BankState()
 }
 
 
-Command BankState::GetReadyCommand(const Command& cmd, uint64_t clk) const {
+Command BankState::GetReadyCommand(const Command& cmd, uint64_t clk) {
     CommandType required_type = CommandType::SIZE;
+
+    // Handle timeout, only entered in TIMEOUT policy
+    if (clk > timeout) {
+        state_ = State::CLOSED;
+
+    }
+
     switch (state_) {
         case State::CLOSED:
             switch (cmd.cmd_type) {
@@ -170,4 +179,15 @@ void BankState::UpdateTiming(CommandType cmd_type, uint64_t time) {
     return;
 }
 
+void BankState::UpdateTimeout(CommandType cmd_type, const RowBufPolicy policy, uint64_t clk) {
+    if (policy != RowBufPolicy::TIMEOUT)
+        return;
+    
+    if (cmd_type == CommandType::READ || cmd_type == CommandType::WRITE) {
+        assert(state_ = State::OPEN);
+        timeout = clk + timing.timeout_delay;
+    } else {
+        timeout = std::numeric_limits<uint64_t>::max(); // No Timeout
+    }
+}
 }  // namespace dramsim3

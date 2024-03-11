@@ -271,13 +271,13 @@ void Controller::IssueCommand(const Command &cmd) {
     }
     // must update stats before states (for row hits)
     UpdateCommandStats(cmd);
-    channel_state_.UpdateTimingAndStates(cmd, clk_);
+    channel_state_.UpdateTimingAndStates(cmd, row_buf_policy_, clk_);
 }
 
 Command Controller::TransToCommand(const Transaction &trans) {
     auto addr = config_.AddressMapping(trans.addr);
     CommandType cmd_type;
-    if (row_buf_policy_ == RowBufPolicy::OPEN_PAGE) {
+    if (row_buf_policy_ == RowBufPolicy::OPEN_PAGE || row_buf_policy_ == RowBufPolicy::TIMEOUT) {
         cmd_type = trans.is_write ? CommandType::WRITE : CommandType::READ;
     } else {
         cmd_type = trans.is_write ? CommandType::WRITE_PRECHARGE

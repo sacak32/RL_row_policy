@@ -14,7 +14,7 @@ ChannelState::ChannelState(const Config& config, const Timing& timing)
         rank_states.reserve(config_.bankgroups);
         for (auto j = 0; j < config_.bankgroups; j++) {
             auto bg_states =
-                std::vector<BankState>(config_.banks_per_group, BankState());
+                std::vector<BankState>(config_.banks_per_group, BankState(timing));
             rank_states.push_back(bg_states);
         }
         bank_states_.push_back(rank_states);
@@ -73,7 +73,7 @@ void ChannelState::RankNeedRefresh(int rank, bool need) {
     return;
 }
 
-Command ChannelState::GetReadyCommand(const Command& cmd, uint64_t clk) const {
+Command ChannelState::GetReadyCommand(const Command& cmd, uint64_t clk) {
     Command ready_cmd = Command();
     if (cmd.IsRankCMD()) {
         int num_ready = 0;
@@ -137,7 +137,7 @@ void ChannelState::UpdateState(const Command& cmd) {
     return;
 }
 
-void ChannelState::UpdateTiming(const Command& cmd, uint64_t clk) {
+void ChannelState::UpdateTiming(const Command& cmd, const RowBufPolicy policy, uint64_t clk) {
     switch (cmd.cmd_type) {
         case CommandType::ACTIVATE:
             UpdateActivationTimes(cmd.Rank(), clk);
@@ -171,6 +171,10 @@ void ChannelState::UpdateTiming(const Command& cmd, uint64_t clk) {
             UpdateOtherRanksTiming(
                 cmd.addr, timing_.other_ranks[static_cast<int>(cmd.cmd_type)],
                 clk);
+
+            // TIMEOUT
+            UpdateSameBankTimeout(cmd.addr, cmd.cmd_type, policy, clk);
+
             break;
         case CommandType::REFRESH:
         case CommandType::SREF_ENTER:
@@ -262,9 +266,19 @@ void ChannelState::UpdateSameRankTiming(
     return;
 }
 
-void ChannelState::UpdateTimingAndStates(const Command& cmd, uint64_t clk) {
+void ChannelState::UpdateSameBankTimeout(
+    const Address& addr,
+    const CommandType cmd_type,
+    const RowBufPolicy policy,
+    uint64_t clk) {
+        bank_states_[addr.rank][addr.bankgroup][addr.bank].UpdateTimeout(
+            cmd_type, policy, clk);
+    return;
+}
+
+void ChannelState::UpdateTimingAndStates(const Command& cmd, const RowBufPolicy policy, uint64_t clk) {
     UpdateState(cmd);
-    UpdateTiming(cmd, clk);
+    UpdateTiming(cmd, policy, clk);
     return;
 }
 

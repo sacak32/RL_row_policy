@@ -325,7 +325,6 @@ void Config::InitTimingParams() {
     tFAW = GetInteger("timing", "tFAW", 50);
     tRPRE = GetInteger("timing", "tRPRE", 1);
     tWPRE = GetInteger("timing", "tWPRE", 1);
-
     // LPDDR4 and GDDR5/6
     tPPD = GetInteger("timing", "tPPD", 0);
 
@@ -334,6 +333,8 @@ void Config::InitTimingParams() {
     tRCDRD = GetInteger("timing", "tRCDRD", 24);
     tRCDWR = GetInteger("timing", "tRCDWR", 20);
 
+    // TIMEOUT Policy
+    TIMEOUT = GetInteger("timing", "TIMEOUT", 10);
     ideal_memory_latency = GetInteger("timing", "ideal_memory_latency", 10);
 
     // calculated timing

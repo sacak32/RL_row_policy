@@ -65,6 +65,8 @@ enum class CommandType {
     SIZE
 };
 
+enum class RowBufPolicy { OPEN_PAGE, CLOSE_PAGE, SIZE, TIMEOUT, UNDEFINED };
+
 struct Command {
     Command() : cmd_type(CommandType::SIZE), hex_addr(0) {}
     Command(CommandType cmd_type, const Address& addr, uint64_t hex_addr)

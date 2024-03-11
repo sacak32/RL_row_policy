@@ -3,7 +3,7 @@
 namespace dramsim3 {
 
 CommandQueue::CommandQueue(int channel_id, const Config& config,
-                           const ChannelState& channel_state,
+                           ChannelState& channel_state,
                            SimpleStats& simple_stats)
     : rank_q_empty(config.ranks, true),
       config_(config),

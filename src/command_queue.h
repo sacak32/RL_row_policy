@@ -17,7 +17,7 @@ enum class QueueStructure { PER_RANK, PER_BANK, SIZE };
 class CommandQueue {
    public:
     CommandQueue(int channel_id, const Config& config,
-                 const ChannelState& channel_state, SimpleStats& simple_stats);
+                 ChannelState& channel_state, SimpleStats& simple_stats);
     Command GetCommandToIssue();
     Command FinishRefresh();
     void ClockTick() { clk_ += 1; };
@@ -42,7 +42,7 @@ class CommandQueue {
 
     QueueStructure queue_structure_;
     const Config& config_;
-    const ChannelState& channel_state_;
+    ChannelState& channel_state_;
     SimpleStats& simple_stats_;
 
     std::vector<CMDQueue> queues_;
