@@ -39,6 +39,12 @@ add_library(dramsim3 SHARED
     src/simple_stats.cc
     src/timing.cc
     src/memory_system.cc
+    src/row_bandit.cc
+
+    # this should probably be in a separate library but whatever
+    lib/Multi-armed-bandit-RL/src/Bandit.cc
+    lib/Multi-armed-bandit-RL/src/BernoulliBandit.cc
+    lib/Multi-armed-bandit-RL/src/NormalBandit.cc
 )
 
 if (THERMAL)

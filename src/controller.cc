@@ -38,7 +38,10 @@ Controller::Controller(int channel, const Config &config, const Timing &timing)
         row_buf_policy_ = RowBufPolicy::OPEN_PAGE;
     else if (config.row_buf_policy == "TIMEOUT")
         row_buf_policy_ = RowBufPolicy::TIMEOUT;
-    else {
+    else if (config.row_buf_policy == "ROW_BANDIT") {
+        row_buf_policy_ = RowBufPolicy::ROW_BANDIT;
+        bandit = RowBandit();
+    } else {
         std::cout << "ERROR: Unidentified row buffer policy." << std::endl;
         row_buf_policy_ = RowBufPolicy::UNDEFINED;
     }
@@ -274,14 +277,28 @@ void Controller::IssueCommand(const Command &cmd) {
     channel_state_.UpdateTimingAndStates(cmd, row_buf_policy_, clk_);
 }
 
+CommandType open_row(const Transaction &trans) {
+    return trans.is_write ? CommandType::WRITE : CommandType::READ;
+}
+
+CommandType close_row(const Transaction &trans) {
+    trans.is_write ? CommandType::WRITE_PRECHARGE
+                   : CommandType::READ_PRECHARGE;
+}
+
 Command Controller::TransToCommand(const Transaction &trans) {
     auto addr = config_.AddressMapping(trans.addr);
     CommandType cmd_type;
-    if (row_buf_policy_ == RowBufPolicy::OPEN_PAGE || row_buf_policy_ == RowBufPolicy::TIMEOUT) {
-        cmd_type = trans.is_write ? CommandType::WRITE : CommandType::READ;
+    if (row_buf_policy_ == RowBufPolicy::ROW_BANDIT) {
+        if (bandit.make_decision()) {
+            cmd_type = open_row(trans);
+        } else {
+            cmd_type = close_row(trans);
+        }
+    } else if (row_buf_policy_ == RowBufPolicy::OPEN_PAGE || row_buf_policy_ == RowBufPolicy::TIMEOUT) {
+        cmd_type = open_row(trans);
     } else {
-        cmd_type = trans.is_write ? CommandType::WRITE_PRECHARGE
-                                  : CommandType::READ_PRECHARGE;
+        cmd_type = close_row(trans);
     }
     return Command(cmd_type, addr, trans.addr);
 }
@@ -315,21 +332,35 @@ void Controller::PrintFinalStats() {
 void Controller::UpdateCommandStats(const Command &cmd) {
     switch (cmd.cmd_type) {
         case CommandType::READ:
-        case CommandType::READ_PRECHARGE:
+        case CommandType::READ_PRECHARGE: {
             simple_stats_.Increment("num_read_cmds");
-            if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
-                                           cmd.Bank()) != 0) {
+            bool did_hit = channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
+                                                      cmd.Bank()) != 0;
+            if (did_hit) {
                 simple_stats_.Increment("num_read_row_hits");
             }
-            break;
-        case CommandType::WRITE:
-        case CommandType::WRITE_PRECHARGE:
-            simple_stats_.Increment("num_write_cmds");
-            if (channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
-                                           cmd.Bank()) != 0) {
-                simple_stats_.Increment("num_write_row_hits");
+            if (row_buf_policy_ == RowBufPolicy::ROW_BANDIT) {
+                if (bandit.update_state(did_hit)) {
+                    simple_stats_.Increment("num_bandit_correct_read");
+                }
             }
             break;
+        }
+        case CommandType::WRITE:
+        case CommandType::WRITE_PRECHARGE: {
+            simple_stats_.Increment("num_write_cmds");
+            bool did_hit = channel_state_.RowHitCount(cmd.Rank(), cmd.Bankgroup(),
+                                                      cmd.Bank()) != 0;
+            if (did_hit) {
+                simple_stats_.Increment("num_write_row_hits");
+            }
+            if (row_buf_policy_ == RowBufPolicy::ROW_BANDIT) {
+                if (bandit.update_state(did_hit)) {
+                    simple_stats_.Increment("num_bandit_correct_write");
+                }
+            }
+            break;
+        }
         case CommandType::ACTIVATE:
             simple_stats_.Increment("num_act_cmds");
             break;

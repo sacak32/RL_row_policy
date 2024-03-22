@@ -38,6 +38,14 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("num_srefx_cmds", "counter", "Number of SREFX commands");
     InitStat("hbm_dual_cmds", "counter", "Number of cycles dual cmds issued");
 
+    // RL bandit stats
+    if (config_.row_buf_policy == "ROW_BANDIT") {
+        InitStat("num_bandit_correct_read", "counter", "Number of correct "
+                                                                   "bandit read predictions");
+        InitStat("num_bandit_correct_write", "counter", "Number of correct "
+                                                                   "bandit write predictions");
+    }
+
     // double stats
     InitStat("act_energy", "double", "Activation energy");
     InitStat("read_energy", "double", "Read energy");

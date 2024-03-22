@@ -10,6 +10,7 @@
 #include "common.h"
 #include "refresh.h"
 #include "simple_stats.h"
+#include "row_bandit.h"
 
 #ifdef THERMAL
 #include "thermal.h"
@@ -64,6 +65,9 @@ class Controller {
 
     // row buffer policy
     RowBufPolicy row_buf_policy_;
+
+    // RL bandit for ROW_BANDIT row policy
+    RowBandit bandit;
 
 #ifdef CMD_TRACE
     std::ofstream cmd_trace_;
